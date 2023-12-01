@@ -11,7 +11,7 @@ type wrapRoundTripper struct {
 }
 
 func (lf wrapRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	var rt = &http.Transport{}
+	rt := &http.Transport{}
 	if lf.isIgnoreSSL {
 		rt.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}

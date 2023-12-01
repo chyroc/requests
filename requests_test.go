@@ -29,64 +29,70 @@ func Test_Real(t *testing.T) {
 		type IP struct {
 			Origin string `json:"origin"`
 		}
-		ip := requests.New[IP](http.MethodGet, joinHttpBinURL("/ip")).JSON()
-		as.Nil(ip.Err())
-		as.NotEmpty(ip.UnwrapOr(IP{}).Origin)
+		res := requests.JSON[IP](
+			requests.New(http.MethodGet, joinHttpBinURL("/ip")),
+		).Unwrap()
+		as.NotEmpty(res.Origin)
 	})
 
 	t.Run("/user-agent", func(t *testing.T) {
-		type UserAgent struct {
+		type Resp struct {
 			UserAgent string `json:"user-agent"`
 		}
-		resp := requests.New[UserAgent](http.MethodGet, joinHttpBinURL("/user-agent")).JSON()
-		as.Nil(resp.Err())
-		as.True(regexp.MustCompile(`chyroc-requests/v\d+.\d+.\d+ \(https://github.com/chyroc/requests\)`).MatchString(resp.Unwrap().UserAgent),
-			fmt.Sprintf("%s not match user-agent", resp.Unwrap().UserAgent))
+		resp := requests.JSON[Resp](
+			requests.New(http.MethodGet, joinHttpBinURL("/user-agent")),
+		).Unwrap()
+		as.True(regexp.MustCompile(`chyroc-requests/v\d+.\d+.\d+ \(https://github.com/chyroc/requests\)`).MatchString(resp.UserAgent),
+			fmt.Sprintf("%s not match user-agent", resp.UserAgent))
 	})
 
 	t.Run("/headers", func(t *testing.T) {
-		type Header struct {
+		type Resp struct {
 			Headers struct {
 				A string `json:"A"`
 				B string `json:"B"`
 			} `json:"headers"`
 		}
-		resp := requests.New[Header](http.MethodGet, joinHttpBinURL("/headers")).WithHeader(
-			"a", "1",
-		).WithHeaders(map[string]string{
-			"a": "2",
-			"b": "3",
-		}).JSON()
-		as.Nil(resp.Err())
-		as.Equal("1,2", resp.Unwrap().Headers.A)
-		as.Equal("3", resp.Unwrap().Headers.B)
+		resp := requests.JSON[Resp](
+			requests.New(http.MethodGet, joinHttpBinURL("/headers")).WithHeader(
+				"a", "1",
+			).WithHeaders(map[string]string{
+				"a": "2",
+				"b": "3",
+			}),
+		).Unwrap()
+		as.Equal("1,2", resp.Headers.A)
+		as.Equal("3", resp.Headers.B)
 	})
 
 	t.Run("/get", func(t *testing.T) {
-		resp := struct {
+		type Resp struct {
 			Args struct {
 				A []string `json:"a"`
 				B string   `json:"b"`
 			} `json:"args"`
-		}{}
-		as.Nil(requests.New(http.MethodGet, joinHttpBinURL("/get")).
-			WithQuery("a", "1").WithQuerys(map[string]string{
-			"a": "2",
-			"b": "3",
-		}).Unmarshal(&resp))
+		}
+		resp := requests.JSON[Resp](
+			requests.New(http.MethodGet, joinHttpBinURL("/get")).
+				WithQuery("a", "1").
+				WithQueryMap(map[string]string{
+					"a": "2",
+					"b": "3",
+				}),
+		).Unwrap()
 		as.Equal([]string{"1", "2"}, resp.Args.A)
 		as.Equal("3", resp.Args.B)
 	})
 
 	t.Run("/status", func(t *testing.T) {
-		status, err := requests.New(http.MethodGet, joinHttpBinURL("/status/403")).ResponseStatus()
-		as.Nil(err)
+		status := requests.New(http.MethodGet, joinHttpBinURL("/status/403")).Status().Unwrap()
 		as.Equal(403, status)
 	})
 
 	t.Run("/delay/3", func(t *testing.T) {
-		text, err := requests.New(http.MethodGet, joinHttpBinURL("/delay/4")).WithTimeout(time.Second).Text()
-		as.Empty(text)
+		err := requests.New(
+			http.MethodGet, joinHttpBinURL("/delay/4"),
+		).WithTimeout(time.Second).Text().Err()
 		as.NotNil(err)
 		as.Contains(err.Error(), "context deadline exceeded")
 	})
@@ -98,20 +104,27 @@ func Test_Real(t *testing.T) {
 	})
 
 	t.Run("/post file", func(t *testing.T) {
-		resp := struct {
+		type Resp struct {
 			Files struct {
 				File string `json:"file"`
 			} `json:"files"`
 			Form map[string]string `json:"form"`
-		}{}
-		as.Nil(requests.New(http.MethodPost, joinHttpBinURL("/post")).WithFile("1.txt", strings.NewReader("hi"), "file", map[string]string{"field1": "val1", "field2": "val2"}).WithTimeout(time.Second * 3).Unmarshal(&resp))
+		}
+		resp := requests.JSON[Resp](
+			requests.New(
+				http.MethodPost, joinHttpBinURL("/post"),
+			).
+				WithFile("1.txt", strings.NewReader("hi"), "file", map[string]string{"field1": "val1", "field2": "val2"}).
+				WithTimeout(time.Second * 3),
+		).Unwrap()
 		as.Equal("hi", resp.Files.File)
 		as.Equal("val1", resp.Form["field1"])
 	})
 
 	t.Run("fail", func(t *testing.T) {
-		text, err := requests.New(http.MethodGet, "").WithTimeout(time.Second).Text()
-		as.Equal("", text)
+		err := requests.New(
+			http.MethodGet, "",
+		).WithTimeout(time.Second).Text().Err()
 		as.NotNil(err)
 	})
 
@@ -133,18 +146,16 @@ func Test_Real(t *testing.T) {
 
 			s := requests.NewSession(sessionFile.Name())
 
-			fmt.Println(s.New(http.MethodGet, "http://127.0.0.1:5100/set-cookies?a=b&c=d").MustResponseHeaders())
+			fmt.Println(s.New(http.MethodGet, "http://127.0.0.1:5100/set-cookies?a=b&c=d").Header())
 
-			resp := map[string]string{}
-			as.Nil(s.New(http.MethodGet, "http://127.0.0.1:5100/get-cookies").Unmarshal(&resp))
+			resp := s.New(http.MethodGet, "http://127.0.0.1:5100/get-cookies").Map().Unwrap()
 			as.Equal("b", resp["a"])
 		}
 
 		{
 			as.Nil(os.Rename(file, file+".bak"))
 			s := requests.NewSession(file + ".bak")
-			resp := map[string]string{}
-			as.Nil(s.New(http.MethodGet, "http://127.0.0.1:5100/get-cookies").Unmarshal(&resp))
+			resp := s.New(http.MethodGet, "http://127.0.0.1:5100/get-cookies").Map().Unwrap()
 			as.Equal("b", resp["a"])
 		}
 	})
@@ -154,30 +165,26 @@ func Test_Factory(t *testing.T) {
 	as := assert.New(t)
 
 	t.Run("", func(t *testing.T) {
-		fac := requests.NewFactory(requests.WithTimeout(time.Second * 10))
-		resp := struct {
+		opt := requests.Options(
+			requests.WithTimeout(time.Second * 10),
+		)
+		type Resp struct {
 			Origin string `json:"origin"`
-		}{}
-		err := fac.New(http.MethodGet, joinHttpBinURL("/ip")).Unmarshal(&resp)
-		as.Nil(err)
+		}
+		resp := requests.JSON[Resp](
+			requests.New(http.MethodGet, joinHttpBinURL("/ip"), opt...),
+		).Unwrap()
 		as.NotEmpty(resp.Origin)
 	})
 
 	t.Run("", func(t *testing.T) {
-		fac := requests.NewFactory(requests.WithTimeout(time.Second*10), func(req *requests.Request) error {
-			req.SetError(fmt.Errorf("must fail"))
-			return nil
-		})
-		_, err := fac.New(http.MethodGet, joinHttpBinURL("/ip")).Text()
-		as.NotNil(err)
-		as.Equal("must fail", err.Error())
-	})
-
-	t.Run("", func(t *testing.T) {
-		fac := requests.NewFactory(requests.WithTimeout(time.Second*10), func(req *requests.Request) error {
-			return fmt.Errorf("must fail")
-		})
-		_, err := fac.New(http.MethodGet, joinHttpBinURL("/ip")).Text()
+		opt := requests.Options(
+			requests.WithTimeout(time.Second*10),
+			func(req *requests.Request) {
+				req.SetError(fmt.Errorf("must fail"))
+			},
+		)
+		err := requests.New(http.MethodGet, joinHttpBinURL("/ip"), opt...).Text().Err()
 		as.NotNil(err)
 		as.Equal("must fail", err.Error())
 	})

@@ -1,39 +1,41 @@
 package requests
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 )
 
 // doRequest 发送请求
-func (r *Request[T]) doRequest() error {
+func (r *Request) doRequest() error {
 	return r.doRequestFactor(r.doInternalRequest)
 }
 
-func (r *Request[T]) parseRequestURL() string {
-	reqURL, err := url.Parse(r.url)
-	if err != nil {
-		return r.url
-	}
-	q := reqURL.Query()
-	for k, v := range r.querys {
-		q[k] = append(q[k], v...)
-	}
-	reqURL.RawQuery = q.Encode()
-	return reqURL.String()
+// doRead send request and read response
+func (r *Request) doRead() error {
+	return r.doRequestFactor(func() error {
+		if err := r.doInternalRequest(); err != nil {
+			return err
+		}
+
+		return r.doInternalRead()
+	})
 }
 
-// doRequest send request
-func (r *Request[T]) doInternalRequest() error {
-	if r.isRequest {
+func (r *Request) doInternalRequest() error {
+	if !r.isRequest.CompareAndSwap(false, true) {
+		// 已经请求过, 返回
 		return nil
 	}
 
-	r.cachedurl = r.parseRequestURL()
+	requestURL := r.requestURL() // 这里不可能有值
+	r.cachedURL.Store(&requestURL)
 
-	r.logger.Info(r.Context(), "[gorequests] %s: %s, body=%s, header=%+v", r.method, r.cachedurl, r.rawBody, r.header)
+	//todo: 区分 debug info 日志内容
+	r.logger.Info(r.Context(), "[requests] %s: %s, body=%s, header=%+v",
+		r.method, requestURL, r.rawBody, r.header)
 
 	if r.persistentJar != nil {
 		defer func() {
@@ -43,71 +45,95 @@ func (r *Request[T]) doInternalRequest() error {
 		}()
 	}
 
-	req, err := http.NewRequest(r.method, r.cachedurl, r.body)
+	ctx, cancel := context.WithTimeout(r.Context(), r.timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, r.method, requestURL, r.body)
 	if err != nil {
-		return fmt.Errorf("[requests] %s %s new request failed: %w", r.method, r.cachedurl, err)
+		return fmt.Errorf("[requests] %s %s new request failed: %w",
+			r.method, requestURL, err)
 	}
 
 	req.Header = r.header
 
-	// TODO: reuse client
-	c := &http.Client{
-		Timeout: r.timeout,
+	resp, err := r.httpCli().Do(req)
+	r.resp = resp
+	if err != nil {
+		return fmt.Errorf("[requests] %s %s send request failed: %w",
+			r.method, requestURL, err)
 	}
-	if r.isIgnoreSSL || r.wrapResponse != nil {
+	return nil
+}
+
+func (r *Request) httpCli() *http.Client {
+	// TODO: reuse client
+	if !r.ignoreSSL && r.wrapResponse == nil && r.persistentJar == nil && !r.noRedirect {
+		return httpClient
+	}
+
+	c := &http.Client{}
+	if r.ignoreSSL || r.wrapResponse != nil {
 		c.Transport = &wrapRoundTripper{
-			isIgnoreSSL: r.isIgnoreSSL,
+			isIgnoreSSL: r.ignoreSSL,
 			wrapResp:    r.wrapResponse,
 		}
 	}
 	if r.persistentJar != nil {
 		c.Jar = r.persistentJar
 	}
-	if r.isNoRedirect {
+	if r.noRedirect {
 		c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
 	}
-
-	resp, err := c.Do(req)
-	r.resp = resp
-	r.isRequest = true
-	if err != nil {
-		return fmt.Errorf("[requests] %s %s send request failed: %w", r.method, r.cachedurl, err)
-	}
-	return nil
+	return c
 }
 
 // doRead send request and read response
-func (r *Request[T]) doRead() error {
-	return r.doRequestFactor(func() error {
-		if err := r.doInternalRequest(); err != nil {
-			return err
-		}
-
-		if r.isRead {
-			return nil
-		}
-
-		var err error
-		r.bytes, err = ioutil.ReadAll(r.resp.Body)
-		r.isRead = true
-		if err != nil {
-			return fmt.Errorf("[requests] %s %s read response failed: %w", r.method, r.cachedurl, err)
-		}
-
-		r.logger.Info(r.Context(), "[gorequests] %s: %s, doRead: %s", r.method, r.cachedurl, r.bytes)
+func (r *Request) doInternalRead() error {
+	if !r.isRead.CompareAndSwap(false, true) {
+		// 已经 read 过
 		return nil
-	})
+	}
+
+	requestURL := *r.cachedURL.Load()
+
+	// todo: io.copy
+	// todo: write file
+	var err error
+	r.bytes, err = io.ReadAll(r.resp.Body)
+	if err != nil {
+		return fmt.Errorf("[requests] %s %s read response failed: %w",
+			r.method, requestURL, err)
+	}
+
+	// todo: log 级别
+	r.logger.Info(r.Context(), "[requests] %s: %s, doRead: %s",
+		r.method, requestURL, r.bytes)
+	return nil
 }
 
-func (r *Request[T]) doRequestFactor(f func() error) error {
+func (r *Request) requestURL() string {
+	reqURL, err := url.Parse(r.url)
+	if err != nil {
+		return r.url
+	}
+	q := reqURL.Query()
+	for k, v := range r.query {
+		q[k] = append(q[k], v...)
+	}
+	reqURL.RawQuery = q.Encode()
+	return reqURL.String()
+}
+
+func (r *Request) cachedRequestURL() string {
+	return *r.cachedURL.Load()
+}
+
+func (r *Request) doRequestFactor(f func() error) error {
 	if r.err != nil {
 		return r.err
 	}
-
-	r.lock.Lock()
-	defer r.lock.Unlock()
 
 	r.err = f()
 	return r.err

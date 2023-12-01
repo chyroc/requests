@@ -4,32 +4,38 @@ import (
 	"time"
 )
 
-type RequestOption[T any] func(req *Request[T]) error
+type Option func(req *Request)
 
-func WithLogger[T any](logger Logger) RequestOption[T] {
-	return func(req *Request[T]) error {
+func Options(options ...Option) []Option {
+	return options
+}
+
+func WithLogger(logger Logger) Option {
+	return func(req *Request) {
 		req.WithLogger(logger)
-		return nil
 	}
 }
 
-func WithTimeout[T any](timeout time.Duration) RequestOption[T] {
-	return func(req *Request[T]) error {
+func WithTimeout(timeout time.Duration) Option {
+	return func(req *Request) {
 		req.WithTimeout(timeout)
-		return nil
 	}
 }
 
-func WithHeader[T any](key, val string) RequestOption[T] {
-	return func(req *Request[T]) error {
+func WithHeader(key, val string) Option {
+	return func(req *Request) {
 		req.WithHeader(key, val)
-		return nil
 	}
 }
 
-func WithQuery[T any](key, val string) RequestOption[T] {
-	return func(req *Request[T]) error {
+func WithQuery(key, val string) Option {
+	return func(req *Request) {
 		req.WithQuery(key, val)
-		return nil
+	}
+}
+
+func applyOpt(r *Request, options ...Option) {
+	for _, opt := range options {
+		opt(r)
 	}
 }
