@@ -33,7 +33,7 @@ func (r *Request) doInternalRequest() error {
 	requestURL := r.requestURL() // 这里不可能有值
 	r.cachedURL.Store(&requestURL)
 
-	//todo: 区分 debug info 日志内容
+	// todo: 区分 debug info 日志内容
 	r.logger.Info(r.Context(), "[requests] %s: %s, body=%s, header=%+v",
 		r.method, requestURL, r.rawBody, r.header)
 
