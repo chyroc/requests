@@ -11,7 +11,7 @@ import (
 	cookiejar "github.com/chyroc/persistent-cookiejar"
 )
 
-type Request struct {
+type Request[T any] struct {
 	// internal
 	cachedurl     string
 	persistentJar *cookiejar.Jar
@@ -32,15 +32,15 @@ type Request struct {
 	body         io.Reader           // request body
 
 	// resp
-	wrapRoundTripperResponse func(resp *http.Response) (*http.Response, error) // wrap response
-	resp                     *http.Response
-	bytes                    []byte
-	isRead                   bool
-	isRequest                bool
+	wrapResponse func(resp *http.Response) (*http.Response, error) // wrap response
+	resp         *http.Response
+	bytes        []byte
+	isRead       bool
+	isRequest    bool
 }
 
-func New(method, url string) *Request {
-	r := &Request{
+func New[T any](method, url string) *Request[T] {
+	r := &Request[T]{
 		url:     url,
 		method:  method,
 		header:  map[string][]string{},
@@ -52,7 +52,7 @@ func New(method, url string) *Request {
 	return r
 }
 
-func (r *Request) SetError(err error) *Request {
+func (r *Request[T]) SetError(err error) *Request[T] {
 	r.err = err
 	return r
 }

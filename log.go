@@ -7,8 +7,8 @@ import (
 )
 
 type Logger interface {
-	Info(ctx context.Context, format string, v ...interface{})
-	Error(ctx context.Context, format string, v ...interface{})
+	Info(ctx context.Context, format string, v ...any)
+	Error(ctx context.Context, format string, v ...any)
 }
 
 func StdoutLogger() Logger {
@@ -24,11 +24,11 @@ type stdoutLogger struct {
 	logger *log.Logger
 }
 
-func (r *stdoutLogger) Info(ctx context.Context, format string, v ...interface{}) {
+func (r *stdoutLogger) Info(ctx context.Context, format string, v ...any) {
 	r.logger.Printf(format, v...)
 }
 
-func (r *stdoutLogger) Error(ctx context.Context, format string, v ...interface{}) {
+func (r *stdoutLogger) Error(ctx context.Context, format string, v ...any) {
 	r.logger.Printf(format, v...)
 }
 
@@ -41,10 +41,10 @@ func newStdoutLogger() Logger {
 // discard logger
 type discardLogger struct{}
 
-func (r *discardLogger) Info(ctx context.Context, format string, v ...interface{}) {
+func (r *discardLogger) Info(ctx context.Context, format string, v ...any) {
 }
 
-func (r *discardLogger) Error(ctx context.Context, format string, v ...interface{}) {
+func (r *discardLogger) Error(ctx context.Context, format string, v ...any) {
 }
 
 func newDiscardLogger() Logger {
