@@ -55,6 +55,7 @@ func New(method, url string, options ...Option) *Request {
 		query:   make(map[string][]string),
 		context: context.Background(),
 		logger:  StdoutLogger(),
+		timeout: time.Second * 3,
 	}
 	r.header.Set("user-agent", fmt.Sprintf("chyroc-requests/%s (https://github.com/chyroc/requests)", version))
 	applyOpt(r, options...)

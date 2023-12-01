@@ -14,8 +14,8 @@ type Session struct {
 	options    []Option
 }
 
-func (r *Session) New(method, url string) *Request {
-	req := New(method, url)
+func (r *Session) New(method, url string, options ...Option) *Request {
+	req := New(method, url, options...)
 	req.persistentJar = r.jar
 	req.SetError(r.err)
 

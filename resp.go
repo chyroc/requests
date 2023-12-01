@@ -18,16 +18,16 @@ func (r *Request) Bytes() Result[[]byte] {
 }
 
 // JSON convert request body to T as json type
-func JSON[T any](r *Request) Result[T] {
+func JSON[T any](r *Request) Result[*T] {
 	bs := r.Bytes()
-	return andThen(bs, func(bsData []byte) Result[T] {
+	return andThen(bs, func(bsData []byte) Result[*T] {
 		var data T
 		if err := json.Unmarshal(bsData, &data); err != nil {
 			// todo: 统一错误格式
-			return Err[T](fmt.Errorf("[requests] %s %s unmarshal %s to %s failed: %w",
+			return Err[*T](fmt.Errorf("[requests] %s %s unmarshal %s to %s failed: %w",
 				r.method, r.cachedRequestURL(), bsData, reflect.TypeOf(data).Name(), err))
 		}
-		return Ok(data)
+		return Ok(&data)
 	})
 }
 
