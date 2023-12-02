@@ -30,16 +30,16 @@ func (r Result[T]) Value() T {
 	return r.t
 }
 
-func (r Result[T]) Unpack() (T, error) {
-	return r.t, r.e
-}
-
 func (r Result[T]) IsErr() bool {
 	return r.e != nil
 }
 
 func (r Result[T]) IsOk() bool {
 	return r.e == nil
+}
+
+func (r Result[T]) Unpack() (T, error) {
+	return r.t, r.e
 }
 
 // Or Returns the contained Ok value or a provided default.
@@ -77,13 +77,6 @@ func (r Result[T]) Unwrap() T {
 func Or[T, U any](r Result[T], defaultValue U, f func(T) U) U {
 	if r.e != nil {
 		return defaultValue
-	}
-	return f(r.t)
-}
-
-func OrElse[T, U any](r Result[T], f func(data T) Result[U]) Result[U] {
-	if r.e != nil {
-		return Err[U](r.e)
 	}
 	return f(r.t)
 }
