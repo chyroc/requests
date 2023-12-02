@@ -62,16 +62,20 @@ func New(method, url string, options ...Option) *Request {
 	return r
 }
 
-func Post(url string, options ...Option) *Request {
-	return New(http.MethodPost, url, options...)
-}
-
 func Get(url string, options ...Option) *Request {
 	return New(http.MethodGet, url, options...)
 }
 
+func Post(url string, options ...Option) *Request {
+	return New(http.MethodPost, url, options...)
+}
+
 func Put(url string, options ...Option) *Request {
 	return New(http.MethodPut, url, options...)
+}
+
+func Patch(url string, options ...Option) *Request {
+	return New(http.MethodPatch, url, options...)
 }
 
 func Delete(url string, options ...Option) *Request {

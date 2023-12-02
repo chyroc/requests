@@ -24,6 +24,26 @@ func (r *Session) New(method, url string, options ...Option) *Request {
 	return req
 }
 
+func (r *Session) Get(url string, options ...Option) *Request {
+	return r.New(http.MethodGet, url, options...)
+}
+
+func (r *Session) Post(url string, options ...Option) *Request {
+	return r.New(http.MethodPost, url, options...)
+}
+
+func (r *Session) Put(url string, options ...Option) *Request {
+	return r.New(http.MethodPut, url, options...)
+}
+
+func (r *Session) Patch(url string, options ...Option) *Request {
+	return r.New(http.MethodPatch, url, options...)
+}
+
+func (r *Session) Delete(url string, options ...Option) *Request {
+	return r.New(http.MethodDelete, url, options...)
+}
+
 func (r *Session) Jar() http.CookieJar {
 	return r.jar
 }

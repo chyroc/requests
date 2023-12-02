@@ -19,36 +19,34 @@ func (r *Request) Bytes() Result[[]byte] {
 
 // JSON convert request body to T as json type
 func JSON[T any](r *Request) Result[*T] {
-	bs := r.Bytes()
-	return andThen(bs, func(bsData []byte) Result[*T] {
-		var data T
-		if err := json.Unmarshal(bsData, &data); err != nil {
+	return Then(r.Bytes(), func(data []byte) Result[*T] {
+		var resp T
+		if err := json.Unmarshal(data, &data); err != nil {
 			// todo: 统一错误格式
 			return Err[*T](fmt.Errorf("[requests] %s %s unmarshal %s to %s failed: %w",
-				r.method, r.cachedRequestURL(), bsData, reflect.TypeOf(data).Name(), err))
+				r.method, r.cachedRequestURL(), data, reflect.TypeOf(resp).Name(), err))
 		}
-		return Ok(&data)
+		return Ok(&resp)
 	})
 }
 
 // Map convert request body to map
 func (r *Request) Map() Result[map[string]any] {
-	bs := r.Bytes()
-	return andThen(bs, func(bsData []byte) Result[map[string]any] {
-		m := make(map[string]any)
-		if err := json.Unmarshal(bsData, &m); err != nil {
-			return Err[map[string]any](fmt.Errorf("[requests] %s %s unmarshal %s to map failed: %w",
-				r.method, r.cachedRequestURL(), bsData, err))
+	return Then(r.Bytes(), func(data []byte) Result[map[string]any] {
+		resp := make(map[string]any)
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return Err[map[string]any](
+				fmt.Errorf("[requests] %s %s unmarshal %s to map failed: %w",
+					r.method, r.cachedRequestURL(), data, err))
 		}
-		return Ok(m)
+		return Ok(resp)
 	})
 }
 
 // Map convert request body to str
 func (r *Request) Text() Result[string] {
-	bs := r.Bytes()
-	return andThen(bs, func(bsData []byte) Result[string] {
-		return Ok(*(*string)(unsafe.Pointer(&bsData)))
+	return Then(r.Bytes(), func(data []byte) Result[string] {
+		return Ok(*(*string)(unsafe.Pointer(&data)))
 	})
 }
 
@@ -62,49 +60,41 @@ func (r *Request) Response() Result[*http.Response] {
 
 // Response get http response status
 func (r *Request) Status() Result[int] {
-	if err := r.doRequest(); err != nil {
-		return Err[int](err)
-	}
-
-	return Ok(r.resp.StatusCode)
+	return OrElse(r.Response(), func(data *http.Response) Result[int] {
+		return Ok(data.StatusCode)
+	})
 }
 
 // Header get http response header
 func (r *Request) Header() Result[http.Header] {
-	r.ReqHeader()
-	if err := r.doRequest(); err != nil {
-		return Err[http.Header](err)
-	}
-	return Ok(r.resp.Header)
+	return OrElse(r.Response(), func(data *http.Response) Result[http.Header] {
+		return Ok(data.Header)
+	})
 }
 
 // HeadersByKey get specific http header response with key
 func (r *Request) HeadersByKey(key string) Result[[]string] {
-	if err := r.doRequest(); err != nil {
-		return Err[[]string](err)
-	}
-	return Ok(r.resp.Header.Values(key))
+	return OrElse(r.Response(), func(data *http.Response) Result[[]string] {
+		return Ok(data.Header.Values(key))
+	})
 }
 
 // CookiesByKey get specific http cookie response with key
 func (r *Request) CookiesByKey(key string) Result[[]string] {
-	if err := r.doRequest(); err != nil {
-		return Err[[]string](err)
-	}
-
-	var resp []string
-	for _, v := range r.resp.Cookies() {
-		if v.Name == key {
-			resp = append(resp, v.Value)
+	return OrElse(r.Response(), func(data *http.Response) Result[[]string] {
+		var resp []string
+		for _, v := range r.resp.Cookies() {
+			if v.Name == key {
+				resp = append(resp, v.Value)
+			}
 		}
-	}
-	return Ok(resp)
+		return Ok(resp)
+	})
 }
 
 // HeaderByKey get specific http header response with key
 func (r *Request) HeaderByKey(key string) Result[string] {
-	if err := r.doRequest(); err != nil {
-		return Err[string](err)
-	}
-	return Ok(r.resp.Header.Get(key))
+	return OrElse(r.Response(), func(data *http.Response) Result[string] {
+		return Ok(data.Header.Get(key))
+	})
 }

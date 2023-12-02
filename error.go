@@ -9,28 +9,55 @@ type Result[T any] struct {
 	e error
 }
 
-// Err equal to generate a Result[T]{E: err}
+// Err generate a Result[T]{E: err}
 func Err[T any](err error) Result[T] {
 	return Result[T]{e: err}
 }
 
-// Ok equal to generate a Result[T]{T: t}
+// Ok generate a Result[T]{T: t}
 func Ok[T any](t T) Result[T] {
 	return Result[T]{t: t}
 }
 
-// Err Converts from Result<T, E> to Option<E>.
+// Err Converts from Result<T, E> to E
 //
-// Converts self into an Option<E>, consuming self, and discarding the success value, if any.
+// Converts self into an E, consuming self, and discarding the success value, if any.
 func (r Result[T]) Err() error {
 	return r.e
 }
 
-func (r Result[T]) Ok() *T {
+func (r Result[T]) Value() T {
+	return r.t
+}
+
+func (r Result[T]) Unpack() (T, error) {
+	return r.t, r.e
+}
+
+func (r Result[T]) IsErr() bool {
+	return r.e != nil
+}
+
+func (r Result[T]) IsOk() bool {
+	return r.e == nil
+}
+
+// Or Returns the contained Ok value or a provided default.
+//
+// Arguments passed to unwrap_or are eagerly evaluated; if you are passing the result of a function call,
+// it is recommended to use unwrap_or_else, which is lazily evaluated.
+func (r Result[T]) Or(defaultValue T) T {
 	if r.e != nil {
-		return nil
+		return defaultValue
 	}
-	return &r.t
+	return r.t
+}
+
+func (r Result[T]) OrElse(fallback func(data T) Result[T]) Result[T] {
+	if r.e != nil {
+		return Err[T](r.e)
+	}
+	return fallback(r.t)
 }
 
 // Unwrap Returns the contained Ok value, consuming the self value.
@@ -47,23 +74,26 @@ func (r Result[T]) Unwrap() T {
 	return r.t
 }
 
-// UnwrapOr Returns the contained Ok value or a provided default.
-//
-// Arguments passed to unwrap_or are eagerly evaluated; if you are passing the result of a function call,
-// it is recommended to use unwrap_or_else, which is lazily evaluated.
-func (r Result[T]) UnwrapOr(defaultValue T) T {
+func Or[T, U any](r Result[T], defaultValue U, f func(T) U) U {
 	if r.e != nil {
 		return defaultValue
 	}
-	return r.t
+	return f(r.t)
 }
 
-// AndThen Calls op if the result is Ok, otherwise returns the Err value of self.
+func OrElse[T, U any](r Result[T], f func(data T) Result[U]) Result[U] {
+	if r.e != nil {
+		return Err[U](r.e)
+	}
+	return f(r.t)
+}
+
+// Then Calls op if the result is Ok, otherwise returns the Err value of self.
 //
 // This function can be used for control flow based on Result values.
-func andThen[T, U any](r Result[T], op func(data T) Result[U]) Result[U] {
+func Then[T, U any](r Result[T], op func(data T) Result[U]) Result[U] {
 	if r.e != nil {
-		return Result[U]{e: r.e}
+		return Err[U](r.e)
 	}
 	return op(r.t)
 }
