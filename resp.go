@@ -60,28 +60,28 @@ func (r *Request) Response() Result[*http.Response] {
 
 // Response get http response status
 func (r *Request) Status() Result[int] {
-	return OrElse(r.Response(), func(data *http.Response) Result[int] {
+	return Then(r.Response(), func(data *http.Response) Result[int] {
 		return Ok(data.StatusCode)
 	})
 }
 
 // Header get http response header
 func (r *Request) Header() Result[http.Header] {
-	return OrElse(r.Response(), func(data *http.Response) Result[http.Header] {
+	return Then(r.Response(), func(data *http.Response) Result[http.Header] {
 		return Ok(data.Header)
 	})
 }
 
 // HeadersByKey get specific http header response with key
 func (r *Request) HeadersByKey(key string) Result[[]string] {
-	return OrElse(r.Response(), func(data *http.Response) Result[[]string] {
+	return Then(r.Response(), func(data *http.Response) Result[[]string] {
 		return Ok(data.Header.Values(key))
 	})
 }
 
 // CookiesByKey get specific http cookie response with key
 func (r *Request) CookiesByKey(key string) Result[[]string] {
-	return OrElse(r.Response(), func(data *http.Response) Result[[]string] {
+	return Then(r.Response(), func(data *http.Response) Result[[]string] {
 		var resp []string
 		for _, v := range r.resp.Cookies() {
 			if v.Name == key {
@@ -94,7 +94,7 @@ func (r *Request) CookiesByKey(key string) Result[[]string] {
 
 // HeaderByKey get specific http header response with key
 func (r *Request) HeaderByKey(key string) Result[string] {
-	return OrElse(r.Response(), func(data *http.Response) Result[string] {
+	return Then(r.Response(), func(data *http.Response) Result[string] {
 		return Ok(data.Header.Get(key))
 	})
 }

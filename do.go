@@ -46,7 +46,7 @@ func (r *Request) doInternalRequest() error {
 	}
 
 	ctx, _ := context.WithTimeout(r.Context(), r.timeout)
-	//defer cancel()
+	// defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, r.method, requestURL, r.body)
 	if err != nil {
