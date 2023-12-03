@@ -3,6 +3,7 @@ module github.com/chyroc/requests
 go 1.19
 
 require (
+	github.com/chyroc/anyhow v0.1.3
 	github.com/chyroc/persistent-cookiejar v0.1.0
 	github.com/stretchr/testify v1.8.4
 )
