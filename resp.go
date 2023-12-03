@@ -21,7 +21,7 @@ func (r *Request) Bytes() Result[[]byte] {
 func JSON[T any](r *Request) Result[*T] {
 	return Then(r.Bytes(), func(data []byte) Result[*T] {
 		var resp T
-		if err := json.Unmarshal(data, &data); err != nil {
+		if err := json.Unmarshal(data, &resp); err != nil {
 			// todo: 统一错误格式
 			return Err[*T](fmt.Errorf("[requests] %s %s unmarshal %s to %s failed: %w",
 				r.method, r.cachedRequestURL(), data, reflect.TypeOf(resp).Name(), err))
