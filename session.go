@@ -15,7 +15,7 @@ type Session struct {
 }
 
 func (r *Session) New(method, url string, options ...Option) *Request {
-	req := New(method, url, options...)
+	req := New(method, url, r.allOptions(options)...)
 	req.persistentJar = r.jar
 	req.SetError(r.err)
 
