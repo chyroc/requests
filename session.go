@@ -25,23 +25,40 @@ func (r *Session) New(method, url string, options ...Option) *Request {
 }
 
 func (r *Session) Get(url string, options ...Option) *Request {
-	return r.New(http.MethodGet, url, options...)
+	return r.New(http.MethodGet, url, r.allOptions(options)...)
 }
 
 func (r *Session) Post(url string, options ...Option) *Request {
-	return r.New(http.MethodPost, url, options...)
+	return r.New(http.MethodPost, url, r.allOptions(options)...)
 }
 
 func (r *Session) Put(url string, options ...Option) *Request {
-	return r.New(http.MethodPut, url, options...)
+	return r.New(http.MethodPut, url, r.allOptions(options)...)
 }
 
 func (r *Session) Patch(url string, options ...Option) *Request {
-	return r.New(http.MethodPatch, url, options...)
+	return r.New(http.MethodPatch, url, r.allOptions(options)...)
 }
 
 func (r *Session) Delete(url string, options ...Option) *Request {
-	return r.New(http.MethodDelete, url, options...)
+	return r.New(http.MethodDelete, url, r.allOptions(options)...)
+}
+
+func (r *Session) allOptions(options []Option) []Option {
+	if len(r.options) == 0 {
+		return options
+	}
+	if len(options) == 0 {
+		return r.options
+	}
+	res := make([]Option, 0, len(r.options)+len(options))
+	for _, v := range r.options {
+		res = append(res, v)
+	}
+	for _, v := range options {
+		res = append(res, v)
+	}
+	return res
 }
 
 func (r *Session) Jar() http.CookieJar {
