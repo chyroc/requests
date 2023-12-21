@@ -1,5 +1,5 @@
-github.com/chyroc/anyhow v0.1.3 h1:SAEhBED8Ne2TxiDlcfaiw1XKVHP7PvsVeKt8CQfa2rE=
-github.com/chyroc/anyhow v0.1.3/go.mod h1:bVTDrTOzvfAcZZuVAGrPgeaSP9kW9o3lBpAYnMHKp/0=
+github.com/chyroc/anyhow v0.1.4 h1:JIXgzGYnOmy3ZlMXhwH1UaNx7UvU2YyfKgLOHt9v6SY=
+github.com/chyroc/anyhow v0.1.4/go.mod h1:bVTDrTOzvfAcZZuVAGrPgeaSP9kW9o3lBpAYnMHKp/0=
 github.com/chyroc/persistent-cookiejar v0.1.0 h1:F7rGmT5sShfskgbZmN9MOUJS8CwcSsm8KbErcAPUO5s=
 github.com/chyroc/persistent-cookiejar v0.1.0/go.mod h1:eb/Xy6R1GfUrLpPD8AdIxnZ0dbihI6yDITF3btgmnJU=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
