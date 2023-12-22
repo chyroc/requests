@@ -20,6 +20,18 @@ func Example_Method() {
 	fmt.Println(r.Text().Unpack())
 }
 
+func Example_unmarshal() {
+	r := requests.Post("https://httpbin.org/post")
+
+	type Response struct {
+		// ...
+	}
+
+	resp := requests.JSON[Response](r)
+
+	fmt.Println(resp.Unpack())
+}
+
 func Example_factory() {
 	// I hope to set fixed parameters every time I initiate a request
 	// Then, every request created by this factory will not log
