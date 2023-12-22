@@ -33,7 +33,6 @@ func (r *Request) doInternalRequest() error {
 	requestURL := r.requestURL() // 这里不可能有值
 	r.cachedURL.Store(&requestURL)
 
-	// todo: 区分 debug info 日志内容
 	r.logger.Info(r.Context(), "[requests] %s: %s, body=%s, header=%+v",
 		r.method, requestURL, r.rawBody, r.header)
 
@@ -66,7 +65,6 @@ func (r *Request) doInternalRequest() error {
 }
 
 func (r *Request) httpCli() *http.Client {
-	// TODO: reuse client
 	if !r.ignoreSSL && r.wrapResponse == nil && r.persistentJar == nil && !r.noRedirect {
 		return httpClient
 	}
@@ -98,7 +96,6 @@ func (r *Request) doInternalRead() error {
 
 	requestURL := *r.cachedURL.Load()
 
-	// todo: io.copy
 	// todo: write file
 	var err error
 	r.bytes, err = io.ReadAll(r.resp.Body)
@@ -107,7 +104,6 @@ func (r *Request) doInternalRead() error {
 			r.method, requestURL, err)
 	}
 
-	// todo: log 级别
 	r.logger.Info(r.Context(), "[requests] %s: %s, doRead: %s",
 		r.method, requestURL, r.bytes)
 	return nil

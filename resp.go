@@ -24,7 +24,6 @@ func JSON[T any](r *Request) Result1[*T] {
 	return Then1(r.Bytes(), func(data []byte) Result1[*T] {
 		var resp T
 		if err := json.Unmarshal(data, &resp); err != nil {
-			// todo: 统一错误格式
 			return Err1[*T](fmt.Errorf("[requests] %s %s unmarshal %s to %s failed: %w",
 				r.method, r.cachedRequestURL(), data, reflect.TypeOf(resp).Name(), err))
 		}

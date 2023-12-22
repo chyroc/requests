@@ -28,9 +28,21 @@ func WithHeader(key, val string) Option {
 	}
 }
 
+func WithHeaders(kv map[string]string) Option {
+	return func(req *Request) {
+		req.WithHeaders(kv)
+	}
+}
+
 func WithQuery(key, val string) Option {
 	return func(req *Request) {
 		req.WithQuery(key, val)
+	}
+}
+
+func WithQueries(queries any) Option {
+	return func(req *Request) {
+		req.WithQueries(queries)
 	}
 }
 

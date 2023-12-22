@@ -118,25 +118,16 @@ func (r *Request) WithQuery(k, v string) *Request {
 	})
 }
 
-// WithQueryMap set multi query k-v map
-func (r *Request) WithQueryMap(kv map[string]string) *Request {
+// WithQueries set multi query k-v
+func (r *Request) WithQueries(queries any) *Request {
 	return r.setRequestParam(func(r *Request) {
-		for k, v := range kv {
-			r.query[k] = append(r.query[k], v)
-		}
-	})
-}
-
-// WithQueryStruct set multi query k-v map
-func (r *Request) WithQueryStruct(v any) *Request {
-	return r.setRequestParam(func(r *Request) {
-		kv, err := queryToMap(v)
+		kvs, err := toQueryMapSlice(queries)
 		if err != nil {
-			r.err = err
+			r.SetError(err)
 			return
 		}
-		for k, v := range kv {
-			r.query[k] = append(r.query[k], v...)
+		for k, vv := range kvs {
+			r.query[k] = append(r.query[k], vv...)
 		}
 	})
 }

@@ -75,7 +75,7 @@ func Test_Real(t *testing.T) {
 		resp := requests.JSON[Resp](
 			requests.New(http.MethodGet, joinHttpBinURL("/get")).
 				WithQuery("a", "1").
-				WithQueryMap(map[string]string{
+				WithQueries(map[string]string{
 					"a": "2",
 					"b": "3",
 				}),

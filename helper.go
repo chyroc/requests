@@ -36,7 +36,7 @@ func newFileUploadRequest(params map[string]string, filekey, filename string, re
 	return writer.FormDataContentType(), body, nil
 }
 
-func queryToMap(v any) (map[string][]string, error) {
+func structToMap(v any) (map[string][]string, error) {
 	ss, err := getQueryToMapKeys(v)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func queryToMap(v any) (map[string][]string, error) {
 	}
 
 	vv := reflect.ValueOf(v)
-	if vv.Kind() == reflect.Ptr {
+	for vv.Kind() == reflect.Ptr {
 		vv = vv.Elem()
 	}
 
@@ -58,6 +58,25 @@ func queryToMap(v any) (map[string][]string, error) {
 	}
 
 	return vals, nil
+}
+
+func toQueryMapSlice(v any) (map[string][]string, error) {
+	if v == nil {
+		return map[string][]string{}, nil
+	}
+
+	switch v := v.(type) {
+	case map[string]string:
+		vals := make(map[string][]string, len(v))
+		for k, v := range v {
+			vals[k] = []string{v}
+		}
+		return vals, nil
+	case map[string][]string:
+		return v, nil
+	default:
+		return structToMap(v)
+	}
 }
 
 func toStringList(v reflect.Value) ([]string, error) {
@@ -88,41 +107,36 @@ func toStringList(v reflect.Value) ([]string, error) {
 	return nil, fmt.Errorf("invalid value: %s", v.Kind())
 }
 
-func getQueryToMapKeys(v any) ([]s, error) {
+func getQueryToMapKeys(v any) ([]field, error) {
 	origin := reflect.TypeOf(v)
 	v, ok := queryToMapKeys.Load(origin)
 	if ok {
-		return v.([]s), nil
+		return v.([]field), nil
 	}
 
 	vt := origin
-	// vv := reflect.ValueOf(v)
-	if vt.Kind() == reflect.Ptr {
+	for vt.Kind() == reflect.Ptr {
 		vt = vt.Elem()
-		// vv = vv.Elem()
 	}
 	if vt.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("need strcut, but got %s", vt.Kind())
 	}
 
-	ss := []s{}
+	result := make([]field, 0, vt.NumField())
 	for i := 0; i < vt.NumField(); i++ {
-		itemT := vt.Field(i)
-		// itemV := vv.Field(i)
-
-		queryKey := itemT.Tag.Get("query")
+		queryKey := vt.Field(i).Tag.Get("query")
 		if queryKey == "" {
 			continue
 		}
-		ss = append(ss, s{
+		result = append(result, field{
 			idx:   i,
 			query: queryKey,
 		})
 	}
 
-	queryToMapKeys.Store(origin, ss)
+	queryToMapKeys.Store(origin, result)
 
-	return ss, nil
+	return result, nil
 }
 
 func toBody(body any) ([]byte, io.Reader, error) {
@@ -142,7 +156,7 @@ func toBody(body any) ([]byte, io.Reader, error) {
 	}
 }
 
-type s struct {
+type field struct {
 	idx   int
 	query string
 }
