@@ -44,8 +44,8 @@ func (r *Request) doInternalRequest() error {
 		}()
 	}
 
-	ctx, _ := context.WithTimeout(r.Context(), r.timeout)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(r.Context(), r.timeout)
+	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, r.method, requestURL, r.body)
 	if err != nil {
@@ -66,6 +66,9 @@ func (r *Request) doInternalRequest() error {
 
 func (r *Request) httpCli() *http.Client {
 	if !r.ignoreSSL && r.wrapResponse == nil && r.persistentJar == nil && !r.noRedirect {
+		if r.timeout > 0 {
+			return httpClientNoTimeout // 用 req 的 ctx 来控制
+		}
 		return httpClient
 	}
 

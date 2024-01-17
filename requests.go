@@ -12,12 +12,9 @@ import (
 	cookiejar "github.com/chyroc/persistent-cookiejar"
 )
 
-var httpClient = &http.Client{
-	Transport:     nil,
-	CheckRedirect: nil,
-	Jar:           nil,
-	Timeout:       time.Second * 3,
-}
+var httpClient = &http.Client{Timeout: time.Second * 3}
+
+var httpClientNoTimeout = &http.Client{}
 
 type Request struct {
 	// internal
