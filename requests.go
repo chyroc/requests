@@ -42,6 +42,7 @@ type Request struct {
 	wrapResponse func(resp *http.Response) (*http.Response, error) // wrap response
 	resp         *http.Response
 	bytes        []byte
+	cancel       context.CancelFunc
 }
 
 func New(method, url string, options ...Option) *Request {

@@ -44,10 +44,9 @@ func (r *Request) doInternalRequest() error {
 		}()
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), r.timeout)
-	defer cancel()
+	r.context, r.cancel = context.WithTimeout(r.Context(), r.timeout)
 
-	req, err := http.NewRequestWithContext(ctx, r.method, requestURL, r.body)
+	req, err := http.NewRequestWithContext(r.context, r.method, requestURL, r.body)
 	if err != nil {
 		return fmt.Errorf("[requests] %s %s new request failed: %w",
 			r.method, requestURL, err)
@@ -95,6 +94,9 @@ func (r *Request) doInternalRead() error {
 	if !r.isRead.CompareAndSwap(false, true) {
 		// 已经 read 过
 		return nil
+	}
+	if r.cancel != nil {
+		defer r.cancel()
 	}
 
 	requestURL := *r.cachedURL.Load()
