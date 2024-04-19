@@ -21,7 +21,7 @@ func (r *Request) Bytes() Result1[[]byte] {
 
 // JSON convert request body to T as json type
 func JSON[T any](r *Request) Result1[*T] {
-	return Then1(r.Bytes(), func(data []byte) Result1[*T] {
+	return AndThen11(r.Bytes(), func(data []byte) Result1[*T] {
 		var resp T
 		if err := json.Unmarshal(data, &resp); err != nil {
 			return Err1[*T](fmt.Errorf("[requests] %s %s unmarshal %s to %s failed: %w",
@@ -33,7 +33,7 @@ func JSON[T any](r *Request) Result1[*T] {
 
 // Map convert request body to map
 func (r *Request) Map() Result1[map[string]any] {
-	return Then1(r.Bytes(), func(data []byte) Result1[map[string]any] {
+	return AndThen11(r.Bytes(), func(data []byte) Result1[map[string]any] {
 		resp := make(map[string]any)
 		if err := json.Unmarshal(data, &resp); err != nil {
 			return Err1[map[string]any](
@@ -46,7 +46,7 @@ func (r *Request) Map() Result1[map[string]any] {
 
 // Map convert request body to str
 func (r *Request) Text() Result1[string] {
-	return Then1(r.Bytes(), func(data []byte) Result1[string] {
+	return AndThen11(r.Bytes(), func(data []byte) Result1[string] {
 		return Ok1(*(*string)(unsafe.Pointer(&data)))
 	})
 }
@@ -61,28 +61,28 @@ func (r *Request) Response() Result1[*http.Response] {
 
 // Response get http response status
 func (r *Request) Status() Result1[int] {
-	return Then1(r.Response(), func(data *http.Response) Result1[int] {
+	return AndThen11(r.Response(), func(data *http.Response) Result1[int] {
 		return Ok1(data.StatusCode)
 	})
 }
 
 // Header get http response header
 func (r *Request) Header() Result1[http.Header] {
-	return Then1(r.Response(), func(data *http.Response) Result1[http.Header] {
+	return AndThen11(r.Response(), func(data *http.Response) Result1[http.Header] {
 		return Ok1(data.Header)
 	})
 }
 
 // HeadersByKey get specific http header response with key
 func (r *Request) HeadersByKey(key string) Result1[[]string] {
-	return Then1(r.Response(), func(data *http.Response) Result1[[]string] {
+	return AndThen11(r.Response(), func(data *http.Response) Result1[[]string] {
 		return Ok1(data.Header.Values(key))
 	})
 }
 
 // CookiesByKey get specific http cookie response with key
 func (r *Request) CookiesByKey(key string) Result1[[]string] {
-	return Then1(r.Response(), func(data *http.Response) Result1[[]string] {
+	return AndThen11(r.Response(), func(data *http.Response) Result1[[]string] {
 		var resp []string
 		for _, v := range r.resp.Cookies() {
 			if v.Name == key {
@@ -95,7 +95,7 @@ func (r *Request) CookiesByKey(key string) Result1[[]string] {
 
 // HeaderByKey get specific http header response with key
 func (r *Request) HeaderByKey(key string) Result1[string] {
-	return Then1(r.Response(), func(data *http.Response) Result1[string] {
+	return AndThen11(r.Response(), func(data *http.Response) Result1[string] {
 		return Ok1(data.Header.Get(key))
 	})
 }

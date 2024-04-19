@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chyroc/anyhow"
 	"github.com/chyroc/requests"
 )
 
@@ -21,15 +22,21 @@ func Example_Method() {
 }
 
 func Example_unmarshal() {
-	r := requests.Post("https://httpbin.org/post")
+	type Data struct{}
 
-	type Response struct {
-		// ...
+	f := func() (Data, error) {
+		type Response struct {
+			Code int32
+			Data Data
+		}
+		return anyhow.AndThen11(requests.JSON[Response](requests.Post("https://httpbin.org/post")), func(t1 *Response) anyhow.Result1[Data] {
+			if t1.Code != 0 {
+				return anyhow.Err1[Data](fmt.Errorf("fail: %d", t1.Code))
+			}
+			return anyhow.Ok1(t1.Data)
+		}).Unpack()
 	}
-
-	resp := requests.JSON[Response](r)
-
-	fmt.Println(resp.Unpack())
+	f()
 }
 
 func Example_factory() {
