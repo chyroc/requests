@@ -92,7 +92,7 @@ func Test_Real(t *testing.T) {
 	t.Run("/delay/3", func(t *testing.T) {
 		err := requests.New(
 			http.MethodGet, joinHttpBinURL("/delay/4"),
-		).WithTimeout(time.Second).Text().Err()
+		).WithTimeout(time.Second).Text().IntoErr()
 		as.NotNil(err)
 		as.Contains(err.Error(), "context deadline exceeded")
 	})
@@ -124,7 +124,7 @@ func Test_Real(t *testing.T) {
 	t.Run("fail", func(t *testing.T) {
 		err := requests.New(
 			http.MethodGet, "",
-		).WithTimeout(time.Second).Text().Err()
+		).WithTimeout(time.Second).Text().IntoErr()
 		as.NotNil(err)
 	})
 
@@ -184,7 +184,7 @@ func Test_Factory(t *testing.T) {
 				req.SetError(fmt.Errorf("must fail"))
 			},
 		)
-		err := requests.New(http.MethodGet, joinHttpBinURL("/ip"), opt...).Text().Err()
+		err := requests.New(http.MethodGet, joinHttpBinURL("/ip"), opt...).Text().IntoErr()
 		as.NotNil(err)
 		as.Equal("must fail", err.Error())
 	})
